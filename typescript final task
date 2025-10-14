@@ -1,0 +1,60 @@
+Typescript OOP:
+Objective
+Create classes A, B, and C in TypeScript, utilizing a variety of Object-Oriented Programming (OOP) concepts. Specifically, the implementation should incorporate:
+ 
+Class Basics: Structuring classes in TypeScript with appropriate syntax and conventions.
+ 
+Arrays and Methods: Incorporate getter and setter methods to manage arrays, objects, any data type within the classes be it protective or public or with any access modifiers
+ 
+CRUD Operations: Implement basic Create, Read, Update, and Delete operations for handling data within classes and arrays.
+ 
+Type Casting: Demonstrate type manipulation, allowing conversion between different data types within getter and setter methods.
+ 
+Class Interaction: Design a class that includes an input array and provides methods to access and modify this array, while being invoked by another class.
+ 
+Interface and Encapsulation: Apply encapsulation for securing data access and define interfaces to outline the structure and expected behavior of the classes.
+ 
+Restricting Setters: Limit certain functionalities within setter methods to impose restrictions and ensure controlled property modifications.
+ 
+Abstract Classes: Develop abstract base classes containing arrays and objects with various methods, which are accessed by extending or implementing them in another class.
+ 
+Inheritance and Extensions: Realize class A as an abstract class that is extended or implemented by class B, featuring objects with getter and setter methods, which are then utilized by class C.
+
+
+Sample template:
+class a implements/entends abstract class {
+
+ private obj: {
+  a: 1
+  b: ',',
+  c: {},
+  d: []
+ }
+ constructor() {}
+
+ //overriding the methods of abstaract class
+
+ private updateObj(input: boolean) : obj {
+  this.obj.a = input 
+ }
+  private updateObj(input: boolean) : obj {
+  this.obj.a = input 
+ }
+  private updateObj(input: boolean) : obj {
+  this.obj.a = input 
+ }
+
+ priavet getObj(): obj {
+  return obj
+ }
+}
+
+class c {
+ const  a = new class a;
+ a.updateObj(!!'1')
+ a.updateObj('2')
+ console.log(a.getObj)
+}
+
+
+Don't provide the solution let's discuss how to finish it
