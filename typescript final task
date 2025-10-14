@@ -57,4 +57,11 @@ class c {
 }
 
 
-Don't provide the solution let's discuss how to finish it
+Classes in TS, how it's implemented in ts, 
+Class and array - method to setter and getter
+CRUD operations in classes and array
+Type casting in classes
+Class in which there's an input array, should have some methods, set and get, that same class trying to invoke in another class
+Interface, encapsulation.
+Restricting setter for certain functionalities
+Abstract class with array and object and few methods. Trying to access it from another class.
