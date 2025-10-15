@@ -13,7 +13,6 @@ abstract class BaseClass {
   // private fields
   private id: string;
   private key: string;
-
   // child classes can use this as a starting point
   private obj: IDataObject;
 
@@ -39,7 +38,7 @@ abstract class BaseClass {
   abstract remove(index: number): void;
   abstract updateItem(index: number, value: any): void;
 
-  // helpers for subclasses
+  // getters for subclasses
   protected getObj(): IDataObject {
     return this.obj;
   }
@@ -137,7 +136,7 @@ class B extends A {
   constructor() {
     super();
 
-    // initializing inherited object fields via protected methods
+    // initializing object fields via protected methods
     this.setObjField('a', 1);
     this.setObjField('b', 'B-class');
     this.setObjField('c', {});
@@ -223,7 +222,7 @@ class B extends A {
     return Object.fromEntries(arr);
   }
 
-  // Example conversions
+  // conversions
   convertBooleanArrayToNumberArray(): number[] {
     return this.getObj().d.map(el => this.booleanToNumber(el.a));
   }
@@ -239,7 +238,7 @@ class B extends A {
     }
   }
 
-  // Protected example — internal field update accessible to subclass only
+  // Protected example 
   protected setB(value: string): void {
     this.setObjField('b', value.trim());
   }
@@ -249,9 +248,7 @@ class B extends A {
 //========================================================================
 //              CLASS C
 //===================================================================
-
-// Chunk 4 — ClassC (consumer)
-// Uses ClassB’s public methods to manipulate data indirectly.
+// it uses ClassB’s public methods to manipulate data indirectly.
 
 class C {
   private handler: B;
@@ -273,14 +270,14 @@ class C {
     this.handler.delete('key_0');
   }
 
-  // Demonstrate array operations
+  //  array operations
   performArrayOps(): void {
     this.handler.add({ a: true, b: 99, c: 'Added' });
     this.handler.updateItem(0, { a: false, b: 55, c: 'Modified' });
     this.handler.remove(1);
   }
 
-  // Demonstrate conversions
+  //  conversions
   testConversions(): void {
     const boolToNum = this.handler.convertBooleanArrayToNumberArray();
     const numToBool = this.handler.convertNumberArrayToBooleanArray();
@@ -289,22 +286,9 @@ class C {
     console.log('Number→Boolean:', numToBool);
   }
 
-  // Restricted setter demo
-  demoRestrictedSetters(): void {
-    this.handler.setA('42'); // valid numeric string
-    // this.handler.setB('Protected call'); // ❌ cannot call (protected)
-  }
-
   // Read-only access
   displayState(): void {
     console.log('Current State:', this.handler.read());
   }
 }
 
-// Example run
-const consumer = new C();
-consumer.performCRUD();
-consumer.performArrayOps();
-consumer.demoRestrictedSetters();
-consumer.testConversions();
-consumer.displayState();
