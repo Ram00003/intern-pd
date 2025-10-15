@@ -1,92 +1,310 @@
-// index.ts
-// Entry demo + Reporter (depends only on Manager). Very small and focused.
+//==============================================================================================
+//  BASE CLASS
+//==============================================================================================
+interface IDataObject {
+  a: number;
+  b: string;
+  c: object;
+  d: any[];
+  [key: string]: any;
+}
 
-import { Manager } from './manager';
-import { StudentPayload, CoursePayload } from './entities';
+abstract class BaseClass {
+  // private fields
+  private id: string;
+  private key: string;
 
-// Simple Reporter depends on Manager only
-class Reporter {
-  constructor(private mgr: Manager) {}
-  summary(): string {
-    const s = this.mgr.stats();
-    const enroll = this.mgr.buildEnrollList();
-    return [
-      `Summary: students=${s.count}`,
-      `avgAge=${typeof s.avgAge === 'number' ? s.avgAge.toFixed(1) : 'N/A'}`,
-      `avgMarks=${typeof s.avgMarks === 'number' ? s.avgMarks.toFixed(1) : 'N/A'}`,
-      `split=${JSON.stringify(s.split)}`,
-      `enroll=${JSON.stringify(enroll)}`
-    ].join(' | ');
+  // child classes can use this as a starting point
+  private obj: IDataObject;
+
+  constructor() {
+    this.id = "base-001";
+    this.key = "secret";
+    this.obj = {
+      a: 0,
+      b: "",
+      c: {},
+      d: []
+    };
   }
-  csv(): string {
-    const enroll = this.mgr.buildEnrollList();
-    const lines = ['code,count,names'];
-    for (const code in enroll) lines.push(`${code},${enroll[code].length},"${enroll[code].join('|')}"`);
-    return lines.join('\n');
+
+  //CRUD operations to be implemented in subclass
+  abstract create(value: any): void;
+  abstract read(): any;
+  abstract update(key: string, value: any): void;
+  abstract delete(key: string): void;
+
+  // array signatures
+  abstract add(item: any): void;
+  abstract remove(index: number): void;
+  abstract updateItem(index: number, value: any): void;
+
+  // helpers for subclasses
+  protected getObj(): IDataObject {
+    return this.obj;
+  }
+
+  protected getId(): string {
+    return this.id;
+  }
+
+  protected getKey(): string {
+    return this.key;
+  }
+
+  // Setter (restricted access)
+  protected setObjField(key: string, value: any): void {
+    (this.obj as any)[key] = value;
+  }
+
+  protected setId(id: string): void {
+    this.id = id;
+  }
+
+  protected setKey(key: string): void {
+    this.key = key;
   }
 }
 
-// Demo
-const mgr = new Manager();          // empty constructor
-mgr.display();
 
-// Add courses (CoursePayload)
-const c1: CoursePayload = { code: 1, title: 'TS Basic', seats: 2, category: 'beginner' };
-const c2: CoursePayload = { code: 2, title: 'Algo', seats: 3, category: 'advanced' };
-mgr.addCourse(c1);
-mgr.addCourse(c2);
-console.log('Courses:', mgr.getAllCourses());
+//=============================================================
+//      CLASS A EXTENDS BASE CLASS
+//=============================================================
+class A extends BaseClass {
+  constructor() {
+    super();
+  }
 
-// Add students (StudentPayload variety: numbers, strings, letters)
-const s1: StudentPayload = { id: 1, name: 'Anu', age: '18', email: 'anu@example.com', marks: 'A' };
-const s2: StudentPayload = { id: '002', name: 'Rohit', age: 20, email: 'rohit@x.com', marks: '82' };
-const s3: StudentPayload = { id: 3, name: 'Nita', age: '22', email: 'nita@x.com', marks: '68%' };
+  // Create — adds new key-value pair if key doesn't exist
+  create(value: any): void {
+    const key = `key_${Object.keys(this.getObj()).length}`;
+    this.setObjField(key, value);
+  }
 
-mgr.addStudent(s1);
-mgr.addStudent(s2);
-mgr.addStudent(s3);
+  // Read — returns current object snapshot
+  read(): any {
+    return this.getObj();
+  }
 
-console.log('Students:', mgr.getAllStudents());
+  // Update — modifies existing key value
+  update(key: string, value: any): void {
+    const obj = this.getObj();
+    if (key in obj) {
+      this.setObjField(key, value);
+    }
+  }
 
-// Enroll (tests seats)
-mgr.enroll(1, 1);
-mgr.enroll('002', 1);
-try {
-  mgr.enroll(3, 1); // should fail (seat limit 2)
-} catch (e) {
-  console.log('Expected enroll fail:', (e as Error).message);
+  // Delete — removes a key if it exists
+  delete(key: string): void {
+    const obj = this.getObj();
+    if (key in obj) {
+      delete (obj as any)[key];
+    }
+  }
+
+  // Array operations on obj.d
+  add(item: any): void {
+    this.getObj().d.push(item);
+  }
+
+  remove(index: number): void {
+    const arr = this.getObj().d;
+    if (index >= 0 && index < arr.length) {
+      arr.splice(index, 1);
+    }
+  }
+
+  updateItem(index: number, value: any): void {
+    const arr = this.getObj().d;
+    if (index >= 0 && index < arr.length) {
+      arr[index] = value;
+    }
+  }
 }
 
-// Show conversion examples
-const stu = mgr.getStudent(1);
-console.log('Student 1 marks & CGPA:', stu?.marks, '->', (stu ? (stu.marks / 9.5).toFixed(2) : 'N/A'));
 
-// Update a student (Partial)
-mgr.updateStudent(1, { age: '19', marks: 'B', email: 'anu2@example.com' });
-console.log('Updated student 1:', mgr.getStudent(1));
+//===========================================================
+//          Class B extends A
+//===========================================================
 
-// Try restrictions
-try { mgr.addStudent({ id: 1, name: 'Dup', email: 'dup@x.com' } as any); } catch (e) { console.log('Expected dup id:', (e as Error).message); }
-try { mgr.addStudent({ id: 4, name: 'Kid', age: 12, email: 'kid@x.com' } as any); } catch (e) { console.log('Expected age error:', (e as Error).message); }
-try { mgr.addStudent({ id: 5, name: 'BadEmail', age: 20, email: 'bad' } as any); } catch (e) { console.log('Expected email error:', (e as Error).message); }
+interface ITypedArrayElement {
+  a: boolean;
+  b: number;
+  c: string;
+}
 
-// Unenroll and delete student
-mgr.unenroll(1, 1);
-console.log('After unenroll enroll list:', mgr.buildEnrollList());
-mgr.deleteStudent(1);
-console.log('Deleted student 1, students now:', mgr.getAllStudents());
+class B extends A {
+  constructor() {
+    super();
 
-// Course deletion protections
-try { mgr.deleteCourse(1); } catch (e) { console.log('Expected course delete fail if enrolled (or already handled):', (e as Error).message); }
+    // initializing inherited object fields via protected methods
+    this.setObjField('a', 1);
+    this.setObjField('b', 'B-class');
+    this.setObjField('c', {});
+    this.setObjField('d', [
+      { a: true, b: 10, c: 'x' },
+      { a: false, b: 20, c: 'y' }
+    ]);
+  }
 
-// Stats & report
-const rep = new Reporter(mgr);
-console.log('REPORT:', rep.summary());
-console.log('CSV:\n' + rep.csv());
+  // CRUD on private obj 
+  create(value: any): void {
+    const key = `key_${Object.keys(this.getObj()).length}`;
+    this.setObjField(key, value);
+  }
 
-// Lock/unlock demo
-mgr.lock();
-try { mgr.addStudent({ id: 10, name: 'Locked', age: 21, email: 'l@x.com' } as any); } catch (e) { console.log('Expected locked add:', (e as Error).message); }
-mgr.unlock();
-mgr.addStudent({ id: 10, name: 'Locked', age: 21, email: 'l@x.com' } as any);
-mgr.display();
+  read(): any {
+    return this.getObj();
+  }
+
+  update(key: string, value: any): void {
+    const obj = this.getObj();
+    if (key in obj) {
+      this.setObjField(key, value);
+    }
+  }
+
+  delete(key: string): void {
+    const obj = this.getObj();
+    if (key in obj) {
+      delete (obj as any)[key];
+    }
+  }
+
+  // Array operations on obj.d
+  add(item: ITypedArrayElement): void {
+    this.getObj().d.push(item);
+  }
+
+  remove(index: number): void {
+    const arr = this.getObj().d;
+    if (index >= 0 && index < arr.length) {
+      arr.splice(index, 1);
+    }
+  }
+
+  updateItem(index: number, value: ITypedArrayElement): void {
+    const arr = this.getObj().d;
+    if (index >= 0 && index < arr.length) {
+      arr[index] = value;
+    }
+  }
+
+  // Type Conversion Helpers
+  private stringToNumber(value: string): number {
+    return Number(value);
+  }
+
+  private numberToString(value: number): string {
+    return String(value);
+  }
+
+  private booleanToNumber(value: boolean): number {
+    return value ? 1 : 0;
+  }
+
+  private numberToBoolean(value: number): boolean {
+    return value !== 0;
+  }
+
+  private arrayToString(arr: any[]): string {
+    return arr.join(',');
+  }
+
+  private stringToArray(str: string): string[] {
+    return str.split(',');
+  }
+
+  private objectToArray(obj: object): any[] {
+    return Object.entries(obj);
+  }
+
+  private arrayToObject(arr: any[]): object {
+    return Object.fromEntries(arr);
+  }
+
+  // Example conversions
+  convertBooleanArrayToNumberArray(): number[] {
+    return this.getObj().d.map(el => this.booleanToNumber(el.a));
+  }
+
+  convertNumberArrayToBooleanArray(): boolean[] {
+    return this.getObj().d.map(el => this.numberToBoolean(el.b));
+  }
+
+  // Restricted setter example (only accepts numeric strings or numbers)
+  setA(value: string | number): void {
+    if (typeof value === 'number' || !isNaN(Number(value))) {
+      this.setObjField('a', Number(value));
+    }
+  }
+
+  // Protected example — internal field update accessible to subclass only
+  protected setB(value: string): void {
+    this.setObjField('b', value.trim());
+  }
+}
+
+
+//========================================================================
+//              CLASS C
+//===================================================================
+
+// Chunk 4 — ClassC (consumer)
+// Uses ClassB’s public methods to manipulate data indirectly.
+
+class C {
+  private handler: B;
+
+  constructor() {
+    this.handler = new B();
+  }
+
+  // Demonstrate public CRUD operations
+  performCRUD(): void {
+    // Create
+    this.handler.create({ newKey: 'value1' });
+    this.handler.create({ newKey: 'value2' });
+
+    // Update
+    this.handler.update('b', 'Updated from ClassC');
+
+    // Delete
+    this.handler.delete('key_0');
+  }
+
+  // Demonstrate array operations
+  performArrayOps(): void {
+    this.handler.add({ a: true, b: 99, c: 'Added' });
+    this.handler.updateItem(0, { a: false, b: 55, c: 'Modified' });
+    this.handler.remove(1);
+  }
+
+  // Demonstrate conversions
+  testConversions(): void {
+    const boolToNum = this.handler.convertBooleanArrayToNumberArray();
+    const numToBool = this.handler.convertNumberArrayToBooleanArray();
+
+    console.log('Boolean→Number:', boolToNum);
+    console.log('Number→Boolean:', numToBool);
+  }
+
+  // Restricted setter demo
+  demoRestrictedSetters(): void {
+    this.handler.setA('42'); // valid numeric string
+    // this.handler.setB('Protected call'); // ❌ cannot call (protected)
+  }
+
+  // Read-only access
+  displayState(): void {
+    console.log('Current State:', this.handler.read());
+  }
+}
+
+// Example run
+const consumer = new C();
+consumer.performCRUD();
+consumer.performArrayOps();
+consumer.demoRestrictedSetters();
+consumer.testConversions();
+consumer.displayState();
