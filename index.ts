@@ -292,3 +292,18 @@ class C {
   }
 }
 
+/* 
+{
+  "a": 1,
+  "b": "Updated from ClassC",
+  "c": {},
+  "d": [
+    { "a": false, "b": 55, "c": "Modified" },
+    { "a": true,  "b": 99, "c": "Added" }
+  ],
+  "key_4": { "newKey": "value1" },
+  "key_5": { "newKey": "value2" }
+}
+
+*/
+
