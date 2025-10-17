@@ -365,4 +365,37 @@ async function bootstrap() {
   
 }
 bootstrap();
+// Current app.controller.ts
+import { Controller, Get } from '@nestjs/common';
+import { AppService } from './app.service';
+
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  hello(): string {
+    return this.appService.getHello();
+  }
+
+  @Get('crud')
+  performCrud() {
+    return this.appService.getCrudResult();
+  }
+
+  @Get('array')
+  performArrayOps() {
+    return this.appService.getArrayOpsResult();
+  }
+
+  @Get('convert')
+  performConversions() {
+    return this.appService.getConversionResult();
+  }
+
+  @Get('state')
+  getCurrentState() {
+    return this.appService.getCurrentState();
+  }
+}
 
