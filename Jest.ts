@@ -305,3 +305,40 @@ async function bootstrap() {
 }
 bootstrap();
 
+// ===========================================
+  // ✅ TEST CASES FOR AppController
+  // ===========================================
+
+  it('should return welcome message', () => {
+    const result = appController.hello();
+    expect(result).toBe('Welcome');
+  });
+
+  it('should return CRUD result object', () => {
+    const result = appController.performCrud();
+    expect(result).toHaveProperty('a');
+    expect(result).toHaveProperty('b');
+    expect(typeof result).toBe('object');
+  });
+
+  it('should return array operation result', () => {
+    const result = appController.performArrayOps();
+    expect(result).toHaveProperty('d');
+    expect(Array.isArray(result.d)).toBe(true);
+  });
+
+  it('should return conversion result object', () => {
+    const result = appController.performConversions();
+    expect(result).toHaveProperty('boolToNum');
+    expect(result).toHaveProperty('numToBool');
+    expect(Array.isArray(result.boolToNum)).toBe(true);
+    expect(Array.isArray(result.numToBool)).toBe(true);
+  });
+
+  it('should return current state object', () => {
+    const result = appController.getCurrentState();
+    expect(result).toHaveProperty('a');
+    expect(result).toHaveProperty('b');
+    expect(result).toHaveProperty('d');
+  });
+});
