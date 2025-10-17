@@ -630,3 +630,55 @@ export class ConversionResponseDto {
   })
   numToBool: boolean[];
 }
+
+// latest controller.ts
+
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AppService } from './app.service';
+import { CrudStateResponseDto } from './dto/crud-state.dto';
+import { ArrayResponseDto } from './dto/array-response.dto';
+import { ConversionResponseDto } from './dto/conversion-response.dto';
+
+@ApiTags('OOP Controller')
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get('crud')
+  @ApiOperation({ summary: 'Perform CRUD and return object snapshot' })
+  @ApiResponse({ status: 200, description: 'Object updated successfully after CRUD operations.', type: CrudStateResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid input or key provided.' })
+  @ApiResponse({ status: 500, description: 'Internal server error while performing CRUD.' })
+  performCrud() {
+    return this.appService.getCrudResult();
+  }
+
+  @Get('array')
+  @ApiOperation({ summary: 'Perform array operations and return object' })
+  @ApiResponse({ status: 200, description: 'Array operations executed successfully.', type: ArrayResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid array index or data type provided.' })
+  @ApiResponse({ status: 500, description: 'Internal error during array manipulation.' })
+  performArrayOps() {
+    return this.appService.getArrayOpsResult();
+  }
+
+  @Get('convert')
+  @ApiOperation({ summary: 'Perform type conversions on internal array' })
+  @ApiResponse({ status: 200, description: 'Type conversion completed successfully.', type: ConversionResponseDto })
+  @ApiResponse({ status: 400, description: 'Invalid data or unsupported conversion format.' })
+  @ApiResponse({ status: 422, description: 'Data cannot be converted due to incompatible types.' })
+  @ApiResponse({ status: 500, description: 'Unexpected error during data conversion.' })
+  performConversions() {
+    return this.appService.getConversionResult();
+  }
+
+  @Get('state')
+  @ApiOperation({ summary: 'Return current internal object state' })
+  @ApiResponse({ status: 200, description: 'Current object state retrieved successfully.', type: CrudStateResponseDto })
+  @ApiResponse({ status: 404, description: 'Object not found for given ID.' })
+  @ApiResponse({ status: 500, description: 'Internal server error while fetching state.' })
+  getCurrentState() {
+    return this.appService.getCurrentState();
+  }
+}
