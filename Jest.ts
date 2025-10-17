@@ -578,3 +578,55 @@ show how to document response examples for performConversions() (it returns two 
 Which of those would you like next?
 
 */
+
+//crud-state.dto
+
+import { ApiProperty } from '@nestjs/swagger';
+
+export class TypedArrayElementDto {
+  @ApiProperty({ example: true, description: 'Boolean flag value' })
+  a: boolean;
+
+  @ApiProperty({ example: 10, description: 'Numeric field inside array element' })
+  b: number;
+
+  @ApiProperty({ example: 'x', description: 'String field inside array element' })
+  c: string;
+}
+
+export class CrudStateResponseDto {
+  @ApiProperty({ example: 1, description: 'Numeric field a of main object' })
+  a: number;
+
+  @ApiProperty({ example: 'Updated from ClassC', description: 'String field b of main object' })
+  b: string;
+
+  @ApiProperty({ example: {}, description: 'Nested object field c' })
+  c: object;
+
+  @ApiProperty({
+    type: [TypedArrayElementDto],
+    description: 'Array of elements with boolean, number, and string fields',
+    example: [
+      { a: true, b: 10, c: 'x' },
+      { a: false, b: 20, c: 'y' },
+    ],
+  })
+  d: TypedArrayElementDto[];
+}
+//convert dto
+import { ApiProperty } from '@nestjs/swagger';
+
+export class ConversionResponseDto {
+  @ApiProperty({
+    example: [1, 0, 1],
+    description: 'Result of converting boolean array to number array (true→1, false→0)',
+  })
+  boolToNum: number[];
+
+  @ApiProperty({
+    example: [true, true, false],
+    description: 'Result of converting number array to boolean array (non-zero→true)',
+  })
+  numToBool: boolean[];
+}
