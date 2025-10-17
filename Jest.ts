@@ -399,3 +399,182 @@ export class AppController {
   }
 }
 
+/*
+Nice — you already have working endpoints. I’ll walk you through a beginner-friendly, copy-pasteable step-by-step to add Swagger docs to them.
+
+I’ll keep it minimal: install, configure (you already did most of this), add simple decorators to the controller, optionally add DTOs for nicer response schemas, run and view. Ready? Let’s go.
+
+1) Install the Swagger package
+
+(If already installed, skip.)
+
+npm install @nestjs/swagger swagger-ui-express
+
+2) Ensure Swagger setup in main.ts
+
+You showed this earlier — it’s correct. Minimal recommended form (paste into main.ts if not present):
+
+import { NestFactory } from '@nestjs/core';
+import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+
+async function bootstrap() {
+  const app = await NestFactory.create(AppModule);
+
+  const config = new DocumentBuilder()
+    .setTitle('Typescript Task')
+    .setDescription('Service API implemented via interface definitions and classes')
+    .setVersion('1.0')
+    .addTag('OOP')
+    .build();
+
+  const document = SwaggerModule.createDocument(app, config);
+  SwaggerModule.setup('api', app, document);
+
+  await app.listen(process.env.PORT ?? 3000);
+}
+bootstrap();
+
+Swagger UI will be available at http://localhost:3000/api.
+
+
+3) Add Swagger decorators to your controller (simple step)
+
+Open your app.controller.ts and add imports from @nestjs/swagger and lightweight decorators. Replace the file content with this exact code (easy copy-paste):
+
+import { Controller, Get } from '@nestjs/common';
+import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
+import { AppService } from './app.service';
+
+@ApiTags('OOP')                       // groups endpoints in Swagger UI
+@Controller()
+export class AppController {
+  constructor(private readonly appService: AppService) {}
+
+  @Get()
+  @ApiOperation({ summary: 'Return welcome message' })
+  @ApiResponse({ status: 200, description: 'Simple welcome string.' })
+  hello(): string {
+    return this.appService.getHello();
+  }
+
+  @Get('crud')
+  @ApiOperation({ summary: 'Perform CRUD and return object snapshot' })
+  @ApiResponse({ status: 200, description: 'Object after CRUD operations.' })
+  performCrud() {
+    return this.appService.getCrudResult();
+  }
+
+  @Get('array')
+  @ApiOperation({ summary: 'Perform array operations and return object' })
+  @ApiResponse({ status: 200, description: 'Object after array changes.' })
+  performArrayOps() {
+    return this.appService.getArrayOpsResult();
+  }
+
+  @Get('convert')
+  @ApiOperation({ summary: 'Run conversions on internal data' })
+  @ApiResponse({ status: 200, description: 'Converted arrays (boolean↔number).' })
+  performConversions() {
+    return this.appService.getConversionResult();
+  }
+
+  @Get('state')
+  @ApiOperation({ summary: 'Return current internal object state' })
+  @ApiResponse({ status: 200, description: 'Current object snapshot.' })
+  getCurrentState() {
+    return this.appService.getCurrentState();
+  }
+}
+
+That’s all you need to get readable route names and descriptions in Swagger.
+
+4) (Optional but recommended) Add DTOs so Swagger shows response schema
+
+Create a small DTO file src/dto/crud-response.dto.ts (example):
+
+// src/dto/crud-response.dto.ts
+import { ApiProperty } from '@nestjs/swagger';
+
+export class TypedArrayElemDto {
+  @ApiProperty({ example: true })
+  a: boolean;
+
+  @ApiProperty({ example: 10 })
+  b: number;
+
+  @ApiProperty({ example: 'x' })
+  c: string;
+}
+
+export class CrudResponseDto {
+  @ApiProperty({ example: 1 })
+  a: number;
+
+  @ApiProperty({ example: 'B-class' })
+  b: string;
+
+  @ApiProperty({ example: {} })
+  c: object;
+
+  @ApiProperty({ type: [TypedArrayElemDto], example: [{ a: true, b: 10, c: 'x' }] })
+  d: TypedArrayElemDto[];
+
+  // optional: allow additional keys (Swagger UI will still show these properties)
+}
+
+Then annotate the controller endpoint with the DTO:
+
+import { CrudResponseDto } from './dto/crud-response.dto';
+
+// ...
+  @Get('crud')
+  @ApiOperation({ summary: 'Perform CRUD and return object snapshot' })
+  @ApiResponse({ status: 200, description: 'Object after CRUD operations.', type: CrudResponseDto })
+  performCrud() {
+    return this.appService.getCrudResult();
+  }
+
+Repeat @ApiResponse({ type: CrudResponseDto }) for array and state endpoints if they return the same object structure.
+
+5) (Optional) If any endpoints accept request bodies (POST/PUT), use @ApiBody() and DTOs with validation decorators — but you don’t have those now.
+
+6) Rebuild & run
+
+npm run start:dev
+# open
+http://localhost:3000/api
+
+You should see:
+
+Title and description you set
+
+Group "OOP" with your endpoints
+
+Per-endpoint summary and response description
+
+DTO schema if you added DTOs
+
+
+7) Quick tips & FAQ (beginner)
+
+If Swagger UI shows unhelpful types (“object”), add DTOs and use @ApiProperty() to give examples.
+
+Use .setVersion('1.0') in DocumentBuilder() to show API version.
+
+If you want the raw JSON spec, add fs.writeFileSync('./swagger.json', JSON.stringify(document)) after createDocument().
+
+
+
+---
+
+If you want, I can:
+
+generate the exact DTO files for each endpoint and paste the updated controller with imports, or
+
+show how to document response examples for performConversions() (it returns two arrays) — quick and useful.
+
+
+Which of those would you like next?
+
+*/
