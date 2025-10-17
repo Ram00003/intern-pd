@@ -634,51 +634,63 @@ export class ConversionResponseDto {
 // latest controller.ts
 
 import { Controller, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { AppService } from './app.service';
-import { CrudStateResponseDto } from './dto/crud-state.dto';
-import { ArrayResponseDto } from './dto/array-response.dto';
-import { ConversionResponseDto } from './dto/conversion-response.dto';
+import { ApiTags, ApiOperation, ApiResponse, ApiParam, ApiQuery, ApiBody } from '@nestjs/swagger';
+import{ CrudStateResponseDto } from './dto/crud-state.dto'
+import { ConversionResponseDto } from './dto/convert.dto'
 
-@ApiTags('OOP Controller')
+
+@ApiTags('OOP')                       
 @Controller()
 export class AppController {
   constructor(private readonly appService: AppService) {}
 
+  @Get('Welcome')
+  @ApiOperation({ summary: 'Return welcome message' })
+  @ApiResponse({ status: 200, description: 'Simple welcome string.' })
+  hello(): string {
+    return this.appService.getHello();
+  }
+
   @Get('crud')
-  @ApiOperation({ summary: 'Perform CRUD and return object snapshot' })
-  @ApiResponse({ status: 200, description: 'Object updated successfully after CRUD operations.', type: CrudStateResponseDto })
-  @ApiResponse({ status: 400, description: 'Invalid input or key provided.' })
-  @ApiResponse({ status: 500, description: 'Internal server error while performing CRUD.' })
+  @ApiOperation({ summary: 'Perform CRUD and return object' })
+  @ApiResponse({ status: 200, description: 'Object after CRUD operations.' })
+  @ApiResponse({ status: 400, description: 'Invalid input or missing data.' })
+  @ApiResponse({ status: 404, description: 'Requested Object not found' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
   performCrud() {
     return this.appService.getCrudResult();
   }
 
   @Get('array')
   @ApiOperation({ summary: 'Perform array operations and return object' })
-  @ApiResponse({ status: 200, description: 'Array operations executed successfully.', type: ArrayResponseDto })
-  @ApiResponse({ status: 400, description: 'Invalid array index or data type provided.' })
+  @ApiResponse({ status: 200, description: 'Array oeprations executed successfully.' })
+  @ApiResponse({ status: 400, description: 'Invalid array index or array out of bounds' })
+  @ApiResponse({ status: 409, description: 'Conflict while updating array elements.' })
   @ApiResponse({ status: 500, description: 'Internal error during array manipulation.' })
   performArrayOps() {
     return this.appService.getArrayOpsResult();
   }
 
   @Get('convert')
-  @ApiOperation({ summary: 'Perform type conversions on internal array' })
-  @ApiResponse({ status: 200, description: 'Type conversion completed successfully.', type: ConversionResponseDto })
-  @ApiResponse({ status: 400, description: 'Invalid data or unsupported conversion format.' })
-  @ApiResponse({ status: 422, description: 'Data cannot be converted due to incompatible types.' })
-  @ApiResponse({ status: 500, description: 'Unexpected error during data conversion.' })
+  @ApiOperation({ summary: 'Run conversions on internal data' })
+  @ApiResponse({ status: 200, description: 'Converted arrays (boolean↔number).' })
+  @ApiResponse({ status: 400, description: 'Invalid Data' })
+  @ApiResponse({ status: 422, description: 'Cannot be converted due to incompatible types' })
+  @ApiResponse({ status: 500, description: 'Internal Server Error' })
   performConversions() {
     return this.appService.getConversionResult();
   }
 
   @Get('state')
   @ApiOperation({ summary: 'Return current internal object state' })
-  @ApiResponse({ status: 200, description: 'Current object state retrieved successfully.', type: CrudStateResponseDto })
-  @ApiResponse({ status: 404, description: 'Object not found for given ID.' })
-  @ApiResponse({ status: 500, description: 'Internal server error while fetching state.' })
+  @ApiResponse({ status: 200, description: 'Current object state retrived successfully.' })
+  @ApiResponse({ status: 404, description: 'Object State not found for given id' })
+  @ApiResponse({ status: 400, description: 'Invalid ID provided' })
+  @ApiResponse({ status: 500, description: 'Internal Server error.' })
   getCurrentState() {
     return this.appService.getCurrentState();
   }
+}
+
 }
