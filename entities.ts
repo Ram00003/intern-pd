@@ -1,69 +1,89 @@
-import { TaskDTO } from "./dto/task.dto";
-import { TaskHistoryDTO } from "./dto/taskHistory.dto";
+createTask(task: TaskDTO): TaskDTO {
+    const taskId = this.nextTaskId++;
+    const newTask: TaskDTO = {
+        ...task,
+        task_id: taskId,
+        created_at: new Date(),
+    };
 
-export interface taskStore{
-    createTask(task: TaskDTO) : TaskDTO;
-    updateTask(taskId: number, task: TaskDTO) : TaskDTO;
-    getTask(taskId: number) : TaskDTO | null;
-    getAlltasks() : TaskDTO[];
-    getTaskHistory(taskId: number) : TaskHistoryDTO[];
-    deleteTask(taskId: number) : boolean;
+    this.tasksMap.set(taskId, newTask);
+
+    // --- record task creation in history ---
+    const historyRecord: TaskHistoryDTO = {
+        history_id: this.nextHistoryId++,
+        task_id: taskId,
+        task_name: task.task_name,
+        task_description: task.task_description,
+        predecessor: task.predecessor,
+        task_status: task.task_status,
+        planned_start: task.planned_start,
+        planned_end: task.planned_end,
+        actual_start: task.actual_start,
+        actual_end: task.actual_end,
+        priority: task.priority,
+        assigned_to: task.assigned_to,
+        assigned_by: task.assigned_by,
+        assigned_at: task.assigned_at,
+        task_order: task.task_order,
+        created_by: task.created_by,
+        created_at: new Date(),
+        updated_by: task.updated_by,
+        updated_at: task.updated_at,
+    };
+
+    // Initialize the history array for this task
+    this.taskHistoryMap.set(taskId, [historyRecord]);
+
+    return newTask;
 }
 
-export class taskStorage implements taskStore {
-    tasksMap = new Map<number, TaskDTO>();          // creating a Key Value pair using Map where key is task_id and value is taskDTO
-    taskHistoryMap = new Map<number, TaskHistoryDTO>(); // creating a Key Value pair using Map where key is task_id and value is taskHistoryDTO
-    nextTaskId = 1; // Task_id starts 1, increases by 1 for new tasks
-    nextHistoryId = 1; // history_id starts with 1, increases by 1 for new updates
-    
-    // create a task
-    createTask(task: TaskDTO): TaskDTO {
-       const taskId = this.nextTaskId++;
-        const newTask: TaskDTO = {
-            ...task,
-            task_id: taskId,
-            created_at: task.created_at = new Date(),
-        };
-        this.tasksMap.set(taskId, newTask);
 
-        const newTaskHistory: TaskHistoryDTO = {
-        const newTaskHistoryId: number = this.nextHistoryId++;
-        }
-        return newTask;
 
-        
+updateTask(taskId: number, task: TaskDTO): TaskDTO {
+    const existingTask = this.tasksMap.get(taskId);
+    if (!existingTask) {
+        throw new Error(`Task with ID ${taskId} not found`);
     }
 
-   // Get Single task by ID
+    const updatedTask: TaskDTO = {
+        ...existingTask,
+        ...task,
+        updated_at: new Date(),
+    };
 
-    getTask(taskId: number): TaskDTO | null {
-    if (this.tasksMap.has(taskId)) {
-            return this.tasksMap.get(taskId) as TaskDTO; 
-        } else {
-            return null;
-        }
-    }
+    this.tasksMap.set(taskId, updatedTask);
 
-  // Retrieve all tasks
-    getAllTasks(): TaskDTO[] {
-    const tasksArray: TaskDTO[] = []; // saving all tasks in an array
+    // --- record task update in history ---
+    const newHistory: TaskHistoryDTO = {
+        history_id: this.nextHistoryId++,
+        task_id: taskId,
+        task_name: updatedTask.task_name,
+        task_description: updatedTask.task_description,
+        predecessor: updatedTask.predecessor,
+        task_status: updatedTask.task_status,
+        planned_start: updatedTask.planned_start,
+        planned_end: updatedTask.planned_end,
+        actual_start: updatedTask.actual_start,
+        actual_end: updatedTask.actual_end,
+        priority: updatedTask.priority,
+        assigned_to: updatedTask.assigned_to,
+        assigned_by: updatedTask.assigned_by,
+        assigned_at: updatedTask.assigned_at,
+        task_order: updatedTask.task_order,
+        created_by: updatedTask.created_by,
+        created_at: updatedTask.created_at,
+        updated_by: updatedTask.updated_by,
+        updated_at: updatedTask.updated_at,
+    };
 
-    // Iterating over all tasks in the map
-    for (const task of this.tasksMap.values()) {
-        tasksArray.push(task); // Add each task to the array
-    }
-    return tasksArray;
-}
-    
+    const historyArray = this.taskHistoryMap.get(taskId) || [];
+    historyArray.push(newHistory);
+    this.taskHistoryMap.set(taskId, historyArray);
 
-    getTaskHistory(taskId: number): TaskHistoryDTO[] {
-        
-    }
-
-
-    deleteTask(taskid: number): boolean {
-        
-    }
-
+    return updatedTask;
 }
 
+
+getTaskHistory(taskId: number): TaskHistoryDTO[] {
+    return this.taskHistoryMap.get(taskId) || [];
+}
