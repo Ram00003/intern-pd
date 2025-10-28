@@ -1,309 +1,162 @@
-//==============================================================================================
-//  BASE CLASS
-//==============================================================================================
-interface IDataObject {
-  a: number;
-  b: string;
-  c: object;
-  d: any[];
-  [key: string]: any;
+Excellent — this is the right layer to think about. You already have a clean TaskStore interface that defines what the data layer should do (the contract), and now you want to make it actually talk to the database (the implementation).
+
+Let’s unpack this properly.
+
+
+---
+
+🎯 The purpose of the TaskStore interface
+
+The TaskStore interface defines the shape of the repository layer — how upper layers (like services or controllers) interact with task data, without caring about the underlying database technology.
+
+export interface TaskStore {
+  createTask(task: TaskDTO): Promise<TaskDTO>;
+  updateTask(taskId: number, task: TaskDTO): Promise<TaskDTO>;
+  getTask(taskId: number): Promise<TaskDTO | null>;
+  getAllTasks(): Promise<TaskDTO[]>;
+  getTaskHistory(taskId: number): Promise<TaskHistoryDTO[]>;
 }
 
-abstract class BaseClass {
-  // private fields
-  private id: string;
-  private key: string;
-  // child classes can use this as a starting point
-  private obj: IDataObject;
+That’s your abstraction.
+Now the concrete implementation could be anything:
 
-  constructor() {
-    this.id = "base-001";
-    this.key = "secret";
-    this.obj = {
-      a: 0,
-      b: "",
-      c: {},
-      d: []
-    };
+Sequelize (MySQL/Postgres)
+
+TypeORM
+
+Prisma
+
+Raw SQL / Knex
+
+In-memory mock (for testing)
+
+
+The goal: every implementation must obey this interface.
+
+
+---
+
+🧩 Step-by-step database implementation using Sequelize + MySQL
+
+You already started this with SequelizeTaskStore. Let’s refine it properly.
+
+Step 1. Import dependencies
+
+You’ll use your Sequelize Task model to handle database interaction.
+
+import { Task } from 'src/models/task.model';
+import { TaskStore } from '../task-store.interface';
+import { TaskDTO } from 'src/dto/task.dto';
+import { TaskHistoryDTO } from 'src/dto/taskHistory.dto';
+
+
+---
+
+Step 2. Implement the class
+
+We make the class implement the interface, ensuring each method returns exactly what the interface promises.
+
+export class SequelizeTaskStore implements TaskStore {
+
+  async createTask(task: TaskDTO): Promise<TaskDTO> {
+    const createdTask = await Task.create(task);
+    return createdTask.toJSON() as TaskDTO;
   }
 
-  //CRUD operations to be implemented in subclass
-  abstract create(value: any): void;
-  abstract read(): any;
-  abstract update(key: string, value: any): void;
-  abstract delete(key: string): void;
-
-  // array signatures
-  abstract add(item: any): void;
-  abstract remove(index: number): void;
-  abstract updateItem(index: number, value: any): void;
-
-  // getters for subclasses
-  protected getObj(): IDataObject {
-    return this.obj;
+  async updateTask(taskId: number, task: TaskDTO): Promise<TaskDTO> {
+    await Task.update(task, { where: { task_id: taskId } });
+    const updated = await Task.findByPk(taskId);
+    return updated?.toJSON() as TaskDTO;
   }
 
-  protected getId(): string {
-    return this.id;
+  async getTask(taskId: number): Promise<TaskDTO | null> {
+    const found = await Task.findByPk(taskId);
+    return found ? (found.toJSON() as TaskDTO) : null;
   }
 
-  protected getKey(): string {
-    return this.key;
+  async getAllTasks(): Promise<TaskDTO[]> {
+    const tasks = await Task.findAll();
+    return tasks.map(task => task.toJSON() as TaskDTO);
   }
 
-  // Setter (restricted access)
-  protected setObjField(key: string, value: any): void {
-    (this.obj as any)[key] = value;
-  }
-
-  protected setId(id: string): void {
-    this.id = id;
-  }
-
-  protected setKey(key: string): void {
-    this.key = key;
-  }
-}
-
-
-//=============================================================
-//      CLASS A EXTENDS BASE CLASS
-//=============================================================
-class A extends BaseClass {
-  constructor() {
-    super();
-  }
-
-  // Create — adds new key-value pair if key doesn't exist
-  create(value: any): void {
-    const key = `key_${Object.keys(this.getObj()).length}`;
-    this.setObjField(key, value);
-  }
-
-  // Read — returns current object snapshot
-  read(): any {
-    return this.getObj();
-  }
-
-  // Update — modifies existing key value
-  update(key: string, value: any): void {
-    const obj = this.getObj();
-    if (key in obj) {
-      this.setObjField(key, value);
-    }
-  }
-
-  // Delete — removes a key if it exists
-  delete(key: string): void {
-    const obj = this.getObj();
-    if (key in obj) {
-      delete (obj as any)[key];
-    }
-  }
-
-  // Array operations on obj.d
-  add(item: any): void {
-    this.getObj().d.push(item);
-  }
-
-  remove(index: number): void {
-    const arr = this.getObj().d;
-    if (index >= 0 && index < arr.length) {
-      arr.splice(index, 1);
-    }
-  }
-
-  updateItem(index: number, value: any): void {
-    const arr = this.getObj().d;
-    if (index >= 0 && index < arr.length) {
-      arr[index] = value;
-    }
+  async getTaskHistory(taskId: number): Promise<TaskHistoryDTO[]> {
+    // placeholder: will implement after TaskHistory model is defined
+    return [];
   }
 }
 
+Notice .toJSON() — it converts the Sequelize model instance into a plain object that aligns with your DTO shape. This is a good practice when separating layers.
 
-//===========================================================
-//          Class B extends A
-//===========================================================
 
-interface ITypedArrayElement {
-  a: boolean;
-  b: number;
-  c: string;
+---
+
+🧠 Step 3. Handle the “Deleted” status properly
+
+You added a "Deleted" status in your enum — good.
+But Sequelize doesn’t auto-handle logical deletions unless you set paranoid: true.
+Here, you’re doing manual soft deletes using:
+
+task_status = 'deleted'
+
+deleted_at
+
+deleted_by
+
+
+So you could modify updateTask or add a deleteTask method:
+
+async deleteTask(taskId: number, deletedBy: number): Promise<TaskDTO> {
+  const deletedAt = new Date();
+  await Task.update(
+    {
+      task_status: 'deleted',
+      deleted_at: deletedAt,
+      deleted_by: deletedBy,
+    },
+    { where: { task_id: taskId } }
+  );
+  const updated = await Task.findByPk(taskId);
+  return updated?.toJSON() as TaskDTO;
 }
 
-class B extends A {
-  constructor() {
-    super();
+If you want, we can formally extend the interface to include this method.
 
-    // initializing object fields via protected methods
-    this.setObjField('a', 1);
-    this.setObjField('b', 'B-class');
-    this.setObjField('c', {});
-    this.setObjField('d', [
-      { a: true, b: 10, c: 'x' },
-      { a: false, b: 20, c: 'y' }
-    ]);
+
+---
+
+⚙️ Step 4. Wire it up in your service layer
+
+NestJS prefers dependency injection.
+You’ll typically do:
+
+@Injectable()
+export class TaskService {
+  constructor(private readonly taskStore: SequelizeTaskStore) {}
+
+  create(taskDto: TaskDTO) {
+    return this.taskStore.createTask(taskDto);
   }
 
-  // CRUD on private obj 
-  create(value: any): void {
-    const key = `key_${Object.keys(this.getObj()).length}`;
-    this.setObjField(key, value);
-  }
-
-  read(): any {
-    return this.getObj();
-  }
-
-  update(key: string, value: any): void {
-    const obj = this.getObj();
-    if (key in obj) {
-      this.setObjField(key, value);
-    }
-  }
-
-  delete(key: string): void {
-    const obj = this.getObj();
-    if (key in obj) {
-      delete (obj as any)[key];
-    }
-  }
-
-  // Array operations on obj.d
-  add(item: ITypedArrayElement): void {
-    this.getObj().d.push(item);
-  }
-
-  remove(index: number): void {
-    const arr = this.getObj().d;
-    if (index >= 0 && index < arr.length) {
-      arr.splice(index, 1);
-    }
-  }
-
-  updateItem(index: number, value: ITypedArrayElement): void {
-    const arr = this.getObj().d;
-    if (index >= 0 && index < arr.length) {
-      arr[index] = value;
-    }
-  }
-
-  // Type Conversion Helpers
-  private stringToNumber(value: string): number {
-    return Number(value);
-  }
-
-  private numberToString(value: number): string {
-    return String(value);
-  }
-
-  private booleanToNumber(value: boolean): number {
-    return value ? 1 : 0;
-  }
-
-  private numberToBoolean(value: number): boolean {
-    return value !== 0;
-  }
-
-  private arrayToString(arr: any[]): string {
-    return arr.join(',');
-  }
-
-  private stringToArray(str: string): string[] {
-    return str.split(',');
-  }
-
-  private objectToArray(obj: object): any[] {
-    return Object.entries(obj);
-  }
-
-  private arrayToObject(arr: any[]): object {
-    return Object.fromEntries(arr);
-  }
-
-  // conversions
-  convertBooleanArrayToNumberArray(): number[] {
-    return this.getObj().d.map(el => this.booleanToNumber(el.a));
-  }
-
-  convertNumberArrayToBooleanArray(): boolean[] {
-    return this.getObj().d.map(el => this.numberToBoolean(el.b));
-  }
-
-  // Restricted setter example (only accepts numeric strings or numbers)
-  setA(value: string | number): void {
-    if (typeof value === 'number' || !isNaN(Number(value))) {
-      this.setObjField('a', Number(value));
-    }
-  }
-
-  // Protected example 
-  protected setB(value: string): void {
-    this.setObjField('b', value.trim());
+  update(id: number, taskDto: TaskDTO) {
+    return this.taskStore.updateTask(id, taskDto);
   }
 }
 
+Later, you can swap the SequelizeTaskStore with InMemoryTaskStore for testing — no controller changes needed. That’s the power of your interface abstraction.
 
-//========================================================================
-//              CLASS C
-//===================================================================
-// it uses ClassB’s public methods to manipulate data indirectly.
 
-class C {
-  private handler: B;
+---
 
-  constructor() {
-    this.handler = new B();
-  }
+🧱 Step 5. Optional — implement TaskHistory
 
-  // Demonstrate public CRUD operations
-  performCRUD(): void {
-    // Create
-    this.handler.create({ newKey: 'value1' });
-    this.handler.create({ newKey: 'value2' });
+You can define a separate TaskHistory model and record each change before updates/deletes to maintain an audit trail.
 
-    // Update
-    this.handler.update('b', 'Updated from ClassC');
+That’ll look like:
 
-    // Delete
-    this.handler.delete('key_0');
-  }
+await TaskHistory.create({ ...oldTaskData, updated_by: userId });
 
-  //  array operations
-  performArrayOps(): void {
-    this.handler.add({ a: true, b: 99, c: 'Added' });
-    this.handler.updateItem(0, { a: false, b: 55, c: 'Modified' });
-    this.handler.remove(1);
-  }
 
-  //  conversions
-  testConversions(): void {
-    const boolToNum = this.handler.convertBooleanArrayToNumberArray();
-    const numToBool = this.handler.convertNumberArrayToBooleanArray();
+---
 
-    console.log('Boolean→Number:', boolToNum);
-    console.log('Number→Boolean:', numToBool);
-  }
-
-  // Read-only access
-  displayState(): void {
-    console.log('Current State:', this.handler.read());
-  }
-}
-
-/* 
-{
-  "a": 1,
-  "b": "Updated from ClassC",
-  "c": {},
-  "d": [
-    { "a": false, "b": 55, "c": "Modified" },
-    { "a": true,  "b": 99, "c": "Added" }
-  ],
-  "key_4": { "newKey": "value1" },
-  "key_5": { "newKey": "value2" }
-}
-
-*/
-
+If you’d like, I can now show how to integrate this implementation cleanly with a NestJS provider (so you can inject it in your AppService or a TaskService using dependency injection).
+Would you like to see that next?
